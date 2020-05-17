@@ -21,6 +21,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
 #include <SPI.h>
 #include <Wire.h>
 
@@ -367,19 +368,54 @@ void textDemo() {
   display.clearDisplay();
   delay(1000);
 
-  static const uint8_t kGlyphWidth = 6;
-  static const uint8_t kGlyphHeight = 8;
-  static const uint16_t kPerRow = 128 / kGlyphWidth;
-  static const uint16_t kRows = 32 / kGlyphHeight;
-  for (uint8_t i = 0;; ++i) {
-    uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
-    uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
-    display.drawChar(x, y, (i & 0xff), SSD1306_WHITE, SSD1306_BLACK, 1);
-    // display.printf("%d,", i);
-    Serial.printf("%d\n", i);
-    display.display();
-    delay(10);
+  if (0) {
+    static const uint8_t kGlyphWidth = 6;
+    static const uint8_t kGlyphHeight = 8;
+    static const uint16_t kPerRow = 128 / kGlyphWidth;
+    static const uint16_t kRows = 32 / kGlyphHeight;
+    for (uint16_t i = 0; i < 256; ++i) {
+      uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
+      uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
+      display.drawChar(x, y, (i & 0xff),
+                       (i & 1) == 0 ? SSD1306_WHITE : SSD1306_BLACK,
+                       (i & 1) == 1 ? SSD1306_WHITE : SSD1306_BLACK, 1);
+      // display.printf("%d,", i);
+      Serial.printf("%d\n", i);
+      display.display();
+      delay(10);
+    }
   }
+
+  // Set a font
+  display.clearDisplay();
+  const GFXfont *font = &FreeMonoBold12pt7b;
+  display.setFont(font);
+
+  uint16_t x = 0;
+  uint16_t y = 16;
+  for (uint16_t ch = font->first; ch <= font->last; ++ch) {
+    if (x >= display.width()) {
+      Serial.printf("clearing display\n");
+      display.clearDisplay();
+      display.display();
+      delay(1000);
+      x = 0;
+    }
+    char s[2] = {(char)ch, 0};
+    int16_t left = 0;
+    int16_t top = 0;
+    uint16_t w = 0;
+    uint16_t h = 0;
+    display.getTextBounds(s, x, y, &left, &top, &w, &h);
+    display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, 1);
+    Serial.printf("ch=%#02x (left,top,w,h)=(%d,%d,%u,%u)\n", //
+                  (unsigned)ch, left, top, w, h);
+    x = (left + w);
+    display.display();
+    delay(100);
+  }
+  for (;;)
+    ;
 }
 
 void fullDemo() {
