@@ -60,51 +60,73 @@ void classicFontCheckers() {
 }
 
 void textDemo() {
-  const GFXfont *fonts[] = {
-      // nullptr, // classic
-      //&FreeMonoBold12pt7b,    //
-      //&FreeSerifItalic12pt7b, //
-      //&FreeMonoOblique9pt7b, //
-      //&Org_01,
+  struct {
+    const char *name;
+    const GFXfont *font;
+    int scale;
+  } fontSpecs[] = {
+      {"classic", nullptr, 1},
+      {"classic", nullptr, 2},
+      {"classic", nullptr, 3},
+      {"classic", nullptr, 4},
+      {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
+      {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
+      {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
+      {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
+      {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
+      {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
+      {"Org_01", &Org_01, 1},
+      {"Org_01", &Org_01, 2},
   };
-  for (const GFXfont *font : fonts) {
-    // Set a font
+  for (const auto &spec : fontSpecs) {
     display.clearDisplay();
-    display.setFont(font);
+    display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+    display.setCursor(0, 20);
+
+    display.setFont(nullptr);
     display.cp437();
-    uint16_t x = 0;
+    display.setTextSize(1);
+    display.print("A");
 
-    uint16_t yAdv = font ? font->yAdvance : 8;
-    uint16_t first = font ? font->first : 0;
-    uint16_t last = font ? font->last : 255;
+    display.setFont(spec.font);
+    display.cp437();
+    display.setTextSize(spec.scale);
+    display.print(spec.name);
+    display.display();
+    delay(1000);
 
-    uint16_t y = yAdv;
+    if (1) {
+      uint16_t x = 0;
+      uint16_t yAdv = spec.font ? spec.font->yAdvance : 8;
+      uint16_t first = spec.font ? spec.font->first : 0;
+      uint16_t last = spec.font ? spec.font->last : 255;
+      uint16_t y = yAdv * spec.scale;
 
-    for (uint16_t ch = first; ch <= last; ++ch) {
-      char s[2] = {(unsigned char)ch, 0};
-      int16_t left = 0;
-      int16_t top = 0;
-      uint16_t w = 0;
-      uint16_t h = 0;
-      display.getTextBounds(s, 0, y, &left, &top, &w, &h);
-      Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
-                    s, x, y, left, top, w, h);
-      if (x + left + w > display.width()) {
-        display.display();
-        delay(1000);
-        x = 0;
-        Serial.print("clearing display\n");
-        display.clearDisplay();
-        // display.display();
+      for (uint16_t ch = first; ch <= last; ++ch) {
+        char s[2] = {(unsigned char)ch, 0};
+        int16_t left = 0;
+        int16_t top = 0;
+        uint16_t w = 0;
+        uint16_t h = 0;
+        display.getTextBounds(s, 0, y, &left, &top, &w, &h);
+        Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
+                      s, x, y, left, top, w, h);
+        if (x + left + w > display.width()) {
+          display.display();
+          delay(100);
+          x = 0;
+          Serial.print("clearing display\n");
+          display.clearDisplay();
+          // display.display();
+        }
+        if (top < 0) {
+          Serial.printf("adjust y=%u by %d !!!\n", y, -top);
+          delay(1000);
+          y += -top;
+        }
+        display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, spec.scale);
+        x += left + w;
       }
-      if (top < 0) {
-        Serial.printf("adjust y=%u by %d !!!\n", y, -top);
-        delay(1000);
-        y += -top;
-      }
-      display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, 1);
-      x += left + w;
-      // delay(20);
     }
   }
 }
@@ -119,9 +141,11 @@ void setup() {
   display.display();
   delay(2000);
   display.clearDisplay();
-  delay(1000);
-
-  classicFontCheckers();
+  // classicFontCheckers();
 }
 
-void loop() { textDemo(); }
+void loop() {
+  textDemo();
+  for (;;)
+    ;
+}
