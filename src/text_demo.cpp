@@ -31,33 +31,40 @@
 // An SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(128, 32, &Wire, 4);
 
-void textDemo() {
-  if (1) {
-    static const uint8_t kGlyphWidth = 6;
-    static const uint8_t kGlyphHeight = 8;
-    static const uint16_t kPerRow = 128 / kGlyphWidth;
-    static const uint16_t kRows = 32 / kGlyphHeight;
-    for (uint16_t i = 0; i < 256; ++i) {
-      uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
-      uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
-      if (x == 0 && y == 0) {
-        display.display();
-        delay(1000);
-      }
-      display.drawChar(x, y, (i & 0xff),
-                       (i & 1) == 0 ? SSD1306_WHITE : SSD1306_BLACK,
-                       (i & 1) == 1 ? SSD1306_WHITE : SSD1306_BLACK, 1);
-      // display.printf("%d,", i);
-      Serial.printf("%d\n", i);
+void classicFontCheckers() {
+  display.clearDisplay();
+  display.setFont(nullptr);
+  display.cp437();
+  static const uint8_t kGlyphWidth = 6;
+  static const uint8_t kGlyphHeight = 8;
+  static const uint16_t kPerRow = 128 / kGlyphWidth;
+  static const uint16_t kRows = 32 / kGlyphHeight;
+  for (uint16_t i = 0; i < 256; ++i) {
+    uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
+    uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
+    if (x == 0 && y == 0) {
+      display.display();
+      delay(1000);
     }
+    uint16_t fg = SSD1306_WHITE;
+    uint16_t bg = SSD1306_BLACK;
+    if (i & 1) {
+      uint16_t t = fg;
+      fg = bg;
+      bg = t;
+    }
+    display.drawChar(x, y, (i & 0xff), fg, bg, 1);
+    // display.printf("%d,", i);
+    Serial.printf("%d\n", i);
   }
+}
 
+void textDemo() {
   const GFXfont *fonts[] = {
-      nullptr,                // classic
-      &FreeMonoBold12pt7b,    //
-      &FreeSerifItalic12pt7b, //
-      &FreeMonoOblique9pt7b,  //
-
+      // nullptr, // classic
+      //&FreeMonoBold12pt7b,    //
+      //&FreeSerifItalic12pt7b, //
+      //&FreeMonoOblique9pt7b, //
       //&Org_01,
   };
   for (const GFXfont *font : fonts) {
@@ -84,7 +91,7 @@ void textDemo() {
                     s, x, y, left, top, w, h);
       if (x + left + w > display.width()) {
         display.display();
-        delay(200);
+        delay(1000);
         x = 0;
         Serial.print("clearing display\n");
         display.clearDisplay();
@@ -113,6 +120,8 @@ void setup() {
   delay(2000);
   display.clearDisplay();
   delay(1000);
+
+  classicFontCheckers();
 }
 
 void loop() { textDemo(); }
