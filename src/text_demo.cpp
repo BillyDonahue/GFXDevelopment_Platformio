@@ -108,13 +108,13 @@ void textDemo() {
         uint16_t w = 0;
         uint16_t h = 0;
         display.getTextBounds(s, 0, y, &left, &top, &w, &h);
-        Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
-                      s, x, y, left, top, w, h);
+        // Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
+        //              s, x, y, left, top, w, h);
         if (x + left + w > display.width()) {
           display.display();
           delay(100);
           x = 0;
-          Serial.print("clearing display\n");
+          // Serial.print("clearing display\n");
           display.clearDisplay();
         }
         if (top < 0) {
