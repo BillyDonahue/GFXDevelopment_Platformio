@@ -31,20 +31,18 @@
 // An SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(128, 32, &Wire, 4);
 
-void classicFontCheckers() {
+void classicFontCheckerBoard(uint8_t scale) {
   display.clearDisplay();
-  display.setFont(nullptr);
-  display.cp437();
   static const uint8_t kGlyphWidth = 6;
   static const uint8_t kGlyphHeight = 8;
-  static const uint16_t kPerRow = 128 / kGlyphWidth;
-  static const uint16_t kRows = 32 / kGlyphHeight;
+  uint16_t kPerRow = display.width() / kGlyphWidth;
+  uint16_t kRows = display.height() / kGlyphHeight;
   for (uint16_t i = 0; i < 256; ++i) {
     uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
     uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
     if (x == 0 && y == 0) {
       display.display();
-      delay(1000);
+      delay(500);
     }
     uint16_t fg = SSD1306_WHITE;
     uint16_t bg = SSD1306_BLACK;
@@ -53,9 +51,7 @@ void classicFontCheckers() {
       fg = bg;
       bg = t;
     }
-    display.drawChar(x, y, (i & 0xff), fg, bg, 1);
-    // display.printf("%d,", i);
-    Serial.printf("%d\n", i);
+    display.drawChar(x, y, (i & 0xff), fg, bg, scale);
   }
 }
 
@@ -130,6 +126,7 @@ void textDemo() {
 }
 
 void setup() {
+  display.cp437(true);
   Serial.begin(9600);
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
@@ -139,8 +136,13 @@ void setup() {
   display.display();
   delay(2000);
   display.clearDisplay();
-  // classicFontCheckers();
+  classicFontCheckerBoard(1);
+  classicFontCheckerBoard(2);
+  classicFontCheckerBoard(3);
+  classicFontCheckerBoard(4);
 }
+
+// comment out the textDemo() call
 
 void loop() {
   textDemo();
