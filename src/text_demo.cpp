@@ -65,18 +65,17 @@ void textDemo() {
     const GFXfont *font;
     int scale;
   } fontSpecs[] = {
-      {"classic", nullptr, 1},
-      {"classic", nullptr, 2},
-      {"classic", nullptr, 3},
-      {"classic", nullptr, 4},
+      {"Classic", nullptr, 1},
+      {"Classic", nullptr, 2},
+      {"Classic", nullptr, 3},
+      {"Classic", nullptr, 4},
+      {"Org_01", &Org_01, 1},
       {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
       {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
       {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
       {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
       {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
       {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
-      {"Org_01", &Org_01, 1},
-      {"Org_01", &Org_01, 2},
   };
   for (const auto &spec : fontSpecs) {
     display.clearDisplay();
@@ -117,7 +116,6 @@ void textDemo() {
           x = 0;
           Serial.print("clearing display\n");
           display.clearDisplay();
-          // display.display();
         }
         if (top < 0) {
           Serial.printf("adjust y=%u by %d !!!\n", y, -top);
