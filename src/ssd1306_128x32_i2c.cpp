@@ -367,11 +367,18 @@ void textDemo() {
   display.clearDisplay();
   delay(1000);
 
-  for (int i = 0; i < 20; ++i) {
-    display.printf("%d,", i);
+  static const uint8_t kGlyphWidth = 6;
+  static const uint8_t kGlyphHeight = 8;
+  static const uint16_t kPerRow = 128 / kGlyphWidth;
+  static const uint16_t kRows = 32 / kGlyphHeight;
+  for (uint8_t i = 0;; ++i) {
+    uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
+    uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
+    display.drawChar(x, y, (i & 0xff), SSD1306_WHITE, SSD1306_BLACK, 1);
+    // display.printf("%d,", i);
     Serial.printf("%d\n", i);
     display.display();
-    delay(1000);
+    delay(10);
   }
 }
 
