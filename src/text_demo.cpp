@@ -22,6 +22,8 @@
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
+#include <Fonts/FreeSerifItalic12pt7b.h>
+#include <Fonts/TomThumb.h>
 #include <SPI.h>
 #include <Wire.h>
 
@@ -386,36 +388,47 @@ void textDemo() {
     }
   }
 
-  // Set a font
-  display.clearDisplay();
-  const GFXfont *font = &FreeMonoBold12pt7b;
-  display.setFont(font);
-
-  uint16_t x = 0;
-  uint16_t y = 16;
-  for (uint16_t ch = font->first; ch <= font->last; ++ch) {
-    if (x >= display.width()) {
-      Serial.printf("clearing display\n");
+  for (;;) {
+    const GFXfont *fonts[] = {
+        &FreeMonoBold12pt7b,    //
+        &FreeSerifItalic12pt7b, //
+                                // &TomThumb,
+    };
+    for (const GFXfont *font : fonts) {
+      // Set a font
       display.clearDisplay();
-      display.display();
-      delay(1000);
-      x = 0;
+      display.setFont(font);
+      uint16_t x = 0;
+      uint16_t y = font->yAdvance;
+
+      for (uint16_t ch = font->first; ch <= font->last; ++ch) {
+        char s[2] = {(char)ch, 0};
+        int16_t left = 0;
+        int16_t top = 0;
+        uint16_t w = 0;
+        uint16_t h = 0;
+        display.getTextBounds(s, 0, y, &left, &top, &w, &h);
+        Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
+                      s, x, y, left, top, w, h);
+        if (x + left + w > display.width()) {
+          delay(200);
+          x = 0;
+          Serial.print("clearing display\n");
+          display.clearDisplay();
+          display.display();
+        }
+        if (top < 0) {
+          Serial.printf("adjust y=%u by %d !!!\n", y, -top);
+          delay(1000);
+          y += -top;
+        }
+        display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, 1);
+        x += left + w;
+        display.display();
+        delay(20);
+      }
     }
-    char s[2] = {(char)ch, 0};
-    int16_t left = 0;
-    int16_t top = 0;
-    uint16_t w = 0;
-    uint16_t h = 0;
-    display.getTextBounds(s, x, y, &left, &top, &w, &h);
-    display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, 1);
-    Serial.printf("ch=%#02x (left,top,w,h)=(%d,%d,%u,%u)\n", //
-                  (unsigned)ch, left, top, w, h);
-    x = (left + w);
-    display.display();
-    delay(100);
   }
-  for (;;)
-    ;
 }
 
 void fullDemo() {
