@@ -140,36 +140,36 @@ void textDemo() {
     }
   }
 }
-void bench() {
-  unsigned long minDuration = 500;
-  unsigned long iters = 0;
 
+void drawAlphabet(unsigned long niter) {
   GFXcanvas1 canvas(32, 32);
-  Serial.println("benchmark:");
-  for (unsigned long runBlock = 100;; runBlock *= 2) {
-    unsigned long t0 = millis();
-    for (unsigned long n = 0; n < runBlock; ++n) {
-      for (unsigned char c = 0;; ++c) {
-        canvas.drawChar(0, 0, c, 1, 0, 1);
-        if (c == 0xff)
-          break;
-      }
-      ++iters;
+  while (niter--) {
+    for (unsigned char c = 0;; ++c) {
+      canvas.drawChar(0, 0, c, 1, 0, 1);
+      if (c == 0xff)
+        break;
     }
-    unsigned long t = millis() - t0;
-    if (t > minDuration) {
+  }
+}
+
+void bench(void (*f)(unsigned long)) {
+  unsigned long minDuration = 500;
+
+  Serial.println("benchmark:");
+  for (unsigned long iters = 10;; iters *= 2) {
+    unsigned long t0 = millis();
+    f(iters);
+    unsigned long t1 = millis();
+    unsigned long duration = t1 - t0;
+    if (duration > minDuration) {
       Serial.print("  {");
-      Serial.print("t:");
-      Serial.print(t);
-      Serial.print(" msec, ");
-
-      Serial.print("iters:");
+      Serial.print("durationMillis:");
+      Serial.print(duration);
+      Serial.print(", iters:");
       Serial.print(iters);
-
       Serial.print(", period:");
-      Serial.print((uint32_t)t / iters);
+      Serial.print(t / iters);
       Serial.print(" msec/iter");
-
       Serial.print("}\n");
       return;
     }
@@ -196,7 +196,7 @@ void setup() {
   }
   if (1) {
     for (int i = 0; i < 5; ++i) {
-      bench();
+      bench(&drawAlphabet);
     }
   }
 }
