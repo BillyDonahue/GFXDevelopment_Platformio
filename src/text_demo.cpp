@@ -54,7 +54,7 @@ void clearDisplay(Adafruit_GFX &display) {
   if (&display == &oled) {
     oled.clearDisplay();
   } else {
-    display.fillRect(0, 0, display.width(), display.height(), SSD1306_BLACK);
+    display.fillScreen(SSD1306_BLACK);
   }
 }
 
