@@ -143,12 +143,14 @@ void textDemo() {
 void bench() {
   unsigned long minDuration = 500;
   unsigned long iters = 0;
+
+  GFXCanvas1 canvas(32, 32);
   Serial.println("benchmark:");
   for (unsigned long runBlock = 100;; runBlock *= 2) {
     unsigned long t0 = millis();
     for (unsigned long n = 0; n < runBlock; ++n) {
       for (unsigned char c = 0;; ++c) {
-        display.drawChar(0, 0, c, 1, 0, 1);
+        canvas.drawChar(0, 0, c, 1, 0, 1);
         if (c == 0xff)
           break;
       }
