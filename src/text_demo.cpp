@@ -41,7 +41,7 @@ static const bool withFonts = 1;
 // An SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(128, 64, &Wire, 4);
 
-void classicFontCheckerBoard(uint8_t scale) {
+void classicFontCheckerBoard(uint8_t scale, uint16_t pageMillis) {
   display.clearDisplay();
   static const uint8_t kGlyphWidth = 6;
   static const uint8_t kGlyphHeight = 8;
@@ -54,7 +54,7 @@ void classicFontCheckerBoard(uint8_t scale) {
     uint16_t y = 0 + kScaledGlyphHeight * ((i / kPerRow) % kRows);
     if ((i && x == 0 && y == 0) || i == 256) {
       display.display();
-      delay(200);
+      delay(pageMillis);
       display.clearDisplay();
       if (i == 256)
         return;
@@ -152,10 +152,11 @@ void setup() {
   display.display();
   delay(2000);
   display.clearDisplay();
-  classicFontCheckerBoard(1);
-  classicFontCheckerBoard(2);
+  classicFontCheckerBoard(1, 200);
+  classicFontCheckerBoard(2, 100);
   // classicFontCheckerBoard(3);
-  classicFontCheckerBoard(4);
+  classicFontCheckerBoard(4, 50);
+  classicFontCheckerBoard(8, 25);
 }
 
 // comment out the textDemo() call
