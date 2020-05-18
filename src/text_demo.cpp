@@ -29,7 +29,7 @@
 #include <Wire.h>
 
 // An SSD1306 display connected to I2C (SDA, SCL pins)
-Adafruit_SSD1306 display(128, 32, &Wire, 4);
+Adafruit_SSD1306 display(128, 64, &Wire, 4);
 
 void classicFontCheckerBoard(uint8_t scale) {
   display.clearDisplay();
@@ -63,15 +63,15 @@ void textDemo() {
   } fontSpecs[] = {
       {"Classic", nullptr, 1},
       {"Classic", nullptr, 2},
-      {"Classic", nullptr, 3},
-      {"Classic", nullptr, 4},
+      //{"Classic", nullptr, 3},
+      //{"Classic", nullptr, 4},
       {"Org_01", &Org_01, 1},
       {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
-      {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
-      {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
-      {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
+      //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
+      //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
+      //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
       {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
-      {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
+      //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
   };
   for (const auto &spec : fontSpecs) {
     display.clearDisplay();
@@ -88,9 +88,10 @@ void textDemo() {
     display.setTextSize(spec.scale);
     display.print(spec.name);
     display.display();
+
     delay(1000);
 
-    if (1) {
+    if (0) {
       uint16_t x = 0;
       uint16_t yAdv = spec.font ? spec.font->yAdvance : 8;
       uint16_t first = spec.font ? spec.font->first : 0;
@@ -98,7 +99,7 @@ void textDemo() {
       uint16_t y = yAdv * spec.scale;
 
       for (uint16_t ch = first; ch <= last; ++ch) {
-        char s[2] = {(unsigned char)ch, 0};
+        char s[2] = {(char)ch, 0};
         int16_t left = 0;
         int16_t top = 0;
         uint16_t w = 0;
@@ -106,7 +107,7 @@ void textDemo() {
         display.getTextBounds(s, 0, y, &left, &top, &w, &h);
         // Serial.printf("TextBounds(\"%s\",%u,%u)=(%d,%d,%u,%u)\n", //
         //              s, x, y, left, top, w, h);
-        if (x + left + w > display.width()) {
+        if ((int16_t)(x + left + w) > (int16_t)display.width()) {
           display.display();
           delay(100);
           x = 0;
@@ -114,7 +115,7 @@ void textDemo() {
           display.clearDisplay();
         }
         if (top < 0) {
-          Serial.printf("adjust y=%u by %d !!!\n", y, -top);
+          // Serial.printf("adjust y=%u by %d !!!\n", y, -top);
           delay(1000);
           y += -top;
         }
@@ -128,7 +129,7 @@ void textDemo() {
 void setup() {
   display.cp437(true);
   Serial.begin(9600);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3d)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ; // Don't proceed, loop forever
@@ -137,15 +138,15 @@ void setup() {
   delay(2000);
   display.clearDisplay();
   classicFontCheckerBoard(1);
-  classicFontCheckerBoard(2);
-  classicFontCheckerBoard(3);
-  classicFontCheckerBoard(4);
+  // classicFontCheckerBoard(2);
+  // classicFontCheckerBoard(3);
+  // classicFontCheckerBoard(4);
 }
 
 // comment out the textDemo() call
 
 void loop() {
   textDemo();
-  for (;;)
-    ;
+  // for (;;)
+  ;
 }
