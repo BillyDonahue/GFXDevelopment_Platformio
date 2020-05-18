@@ -20,31 +20,36 @@ static const bool withFonts = 1;
 
 Adafruit_SSD1306 oled(128, 64, &Wire, 4);
 
-void bench(void (*f)(unsigned long)) {
+void bench(Print &out, void (*f)(unsigned long)) {
   unsigned long minDuration = 2000;
 
-  Serial.println("Running benchmark");
+  out.println("Running benchmark");
   for (unsigned long iters = 10;;) {
-    Serial.print("iters=");
-    Serial.println(iters);
+    out.print("iters=");
+    out.println(iters);
     unsigned long t0 = millis();
     f(iters);
     unsigned long t1 = millis();
     unsigned long duration = t1 - t0;
     if (duration > minDuration) {
-      Serial.print("  {");
-      Serial.print("durationMillis:");
-      Serial.print(duration);
-      Serial.print(", iters:");
-      Serial.print(iters);
-      Serial.print(", period:");
-      Serial.print(duration / iters);
-      Serial.print(" msec/iter");
-      Serial.print("}\n");
+      if (0) {
+        out.print("duration:");
+        out.println(duration);
+        out.print("iters:");
+        out.println(iters);
+      }
+      out.print("msec/iter:");
+      out.println(duration / iters);
       return;
     }
     // improve the estimate of iters
     iters = iters * (1.2 * minDuration / duration);
+  }
+}
+
+void flushDisplay(Adafruit_GFX &display) {
+  if (&display == &oled) {
+    oled.display();
   }
 }
 
@@ -53,11 +58,6 @@ void clearDisplay(Adafruit_GFX &display) {
     oled.clearDisplay();
   } else {
     display.fillRect(0, 0, display.width(), display.height(), SSD1306_BLACK);
-  }
-}
-void flushDisplay(Adafruit_GFX &display) {
-  if (&display == &oled) {
-    oled.display();
   }
 }
 
@@ -173,21 +173,6 @@ void drawAlphabet(unsigned long niter) {
   }
 }
 
-void setupDisplay(Adafruit_GFX &display) {
-  display.cp437(true);
-  flushDisplay(display);
-  delay(2000);
-  clearDisplay(display);
-  if (0) {
-    uint16_t basicPageMillis = 100;
-    uint16_t scales[] = {1, 2, 4, 8};
-    for (uint16_t sc : scales) {
-      classicFontCheckerBoard(display, sc, basicPageMillis / sc);
-    }
-  }
-  bench(&drawAlphabet);
-}
-
 void setup() {
   Serial.begin(9600);
   if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3d)) { // Address 0x3C for 128x32
@@ -195,7 +180,26 @@ void setup() {
     for (;;)
       ; // Don't proceed, loop forever
   }
-  setupDisplay(oled);
+  oled.cp437(true);
+  flushDisplay(oled);
+  delay(2000);
+  clearDisplay(oled);
+
+  if (1) {
+    uint16_t basicPageMillis = 40;
+    uint16_t scales[] = {1, 8};
+    for (uint16_t sc : scales) {
+      classicFontCheckerBoard(oled, sc, basicPageMillis / sc);
+    }
+  }
+  clearDisplay(oled);
+  oled.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+  oled.setCursor(0, 0);
+  bench(oled, &drawAlphabet);
+  flushDisplay(oled);
+  delay(2000);
+  for (;;)
+    ;
 }
 
 // comment out the textDemo() call
