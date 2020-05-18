@@ -28,6 +28,16 @@
 #include <SPI.h>
 #include <Wire.h>
 
+// Test the effect of leaving setFont calls out of a sketch
+// in Adafruit-GFX 1.8.2, it doesn't save much.
+
+// AVR (Uno) flash space:
+//  withFonts     , false , true
+// 1.8.2          , 13944 , 19376
+// glcdfont_unify , 13526 , 19610
+
+static const bool withFonts = 1;
+
 // An SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(128, 64, &Wire, 4);
 
@@ -146,7 +156,9 @@ void setup() {
 // comment out the textDemo() call
 
 void loop() {
-  textDemo();
+  if (withFonts) {
+    textDemo();
+  }
   // for (;;)
   ;
 }
