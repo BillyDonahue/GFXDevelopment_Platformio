@@ -45,18 +45,23 @@ void classicFontCheckerBoard(uint8_t scale) {
   display.clearDisplay();
   static const uint8_t kGlyphWidth = 6;
   static const uint8_t kGlyphHeight = 8;
-  uint16_t kPerRow = display.width() / kGlyphWidth;
-  uint16_t kRows = display.height() / kGlyphHeight;
-  for (uint16_t i = 0; i < 256; ++i) {
-    uint16_t x = 0 + kGlyphWidth * (i % kPerRow);
-    uint16_t y = 0 + kGlyphHeight * ((i / kPerRow) % kRows);
-    if (x == 0 && y == 0) {
+  const uint8_t kScaledGlyphWidth = kGlyphWidth * scale;
+  const uint8_t kScaledGlyphHeight = kGlyphHeight * scale;
+  uint16_t kPerRow = display.width() / kScaledGlyphWidth;
+  uint16_t kRows = display.height() / kScaledGlyphHeight;
+  for (uint16_t i = 0;; ++i) {
+    uint16_t x = 0 + kScaledGlyphWidth * (i % kPerRow);
+    uint16_t y = 0 + kScaledGlyphHeight * ((i / kPerRow) % kRows);
+    if ((i && x == 0 && y == 0) || i == 256) {
       display.display();
-      delay(500);
+      delay(200);
+      display.clearDisplay();
+      if (i == 256)
+        return;
     }
     uint16_t fg = SSD1306_WHITE;
     uint16_t bg = SSD1306_BLACK;
-    if (i & 1) {
+    if (false && i & 1) {
       uint16_t t = fg;
       fg = bg;
       bg = t;
@@ -148,9 +153,9 @@ void setup() {
   delay(2000);
   display.clearDisplay();
   classicFontCheckerBoard(1);
-  // classicFontCheckerBoard(2);
+  classicFontCheckerBoard(2);
   // classicFontCheckerBoard(3);
-  // classicFontCheckerBoard(4);
+  classicFontCheckerBoard(4);
 }
 
 // comment out the textDemo() call
