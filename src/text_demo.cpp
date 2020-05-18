@@ -140,6 +140,37 @@ void textDemo() {
     }
   }
 }
+void bench() {
+  unsigned long minDuration = 500;
+  unsigned long iters = 0;
+  for (unsigned long runBlock = 100;; runBlock *= 2) {
+    unsigned long t0 = millis();
+    for (unsigned long n = 0; n < runBlock; ++n) {
+      for (unsigned char c = 0;; ++c) {
+        display.drawChar(0, 0, c, 1, 0, 1);
+        if (c == 0xff)
+          break;
+      }
+      ++iters;
+    }
+    unsigned long t = millis() - t0;
+    if (t > minDuration) {
+      Serial.print("t:");
+      Serial.print(t);
+      Serial.print(" msec, ");
+
+      Serial.print("iters:");
+      Serial.print(iters);
+
+      Serial.print(", period:");
+      Serial.print((uint32_t)t / iters);
+      Serial.print(" msec/iter");
+
+      Serial.print("\n");
+      return;
+    }
+  }
+}
 
 void setup() {
   display.cp437(true);
@@ -152,11 +183,18 @@ void setup() {
   display.display();
   delay(2000);
   display.clearDisplay();
-  classicFontCheckerBoard(1, 200);
-  classicFontCheckerBoard(2, 100);
-  // classicFontCheckerBoard(3);
-  classicFontCheckerBoard(4, 50);
-  classicFontCheckerBoard(8, 25);
+  if (0) {
+    uint16_t basicPageMillis = 100;
+    uint16_t scales[] = {1, 2, 4, 8};
+    for (uint16_t sc : scales) {
+      classicFontCheckerBoard(sc, basicPageMillis / sc);
+    }
+  }
+  if (1) {
+    for (int i = 0; i < 5; ++i) {
+      bench();
+    }
+  }
 }
 
 // comment out the textDemo() call
@@ -166,5 +204,4 @@ void loop() {
     textDemo();
   }
   // for (;;)
-  ;
 }
