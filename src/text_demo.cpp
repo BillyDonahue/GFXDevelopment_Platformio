@@ -22,11 +22,8 @@ Adafruit_SSD1306 oled(128, 64, &Wire, 4);
 
 void bench(Print &out, void (*f)(unsigned long)) {
   unsigned long minDuration = 2000;
-
-  out.println("Running benchmark");
+  // out.println("Running benchmark");
   for (unsigned long iters = 10;;) {
-    out.print("iters=");
-    out.println(iters);
     unsigned long t0 = millis();
     f(iters);
     unsigned long t1 = millis();
@@ -162,14 +159,24 @@ void textDemo(Adafruit_GFX &display) {
   }
 }
 
-void drawAlphabet(unsigned long niter) {
+void drawAlphabetTo(Adafruit_GFX &display) {
+  for (unsigned char c = 0;; ++c) {
+    display.drawChar(0, 0, c, 1, 0, 1);
+    if (c == 0xff)
+      break;
+  }
+}
+
+void drawAlphabetCanvas(unsigned long niter) {
   GFXcanvas1 canvas(32, 32);
   while (niter--) {
-    for (unsigned char c = 0;; ++c) {
-      canvas.drawChar(0, 0, c, 1, 0, 1);
-      if (c == 0xff)
-        break;
-    }
+    drawAlphabetTo(canvas);
+  }
+}
+
+void drawAlphabetOled(unsigned long niter) {
+  while (niter--) {
+    drawAlphabetTo(oled);
   }
 }
 
@@ -181,6 +188,7 @@ void setup() {
       ; // Don't proceed, loop forever
   }
   oled.cp437(true);
+  oled.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
   flushDisplay(oled);
   delay(2000);
   clearDisplay(oled);
@@ -192,12 +200,19 @@ void setup() {
       classicFontCheckerBoard(oled, sc, basicPageMillis / sc);
     }
   }
+
   clearDisplay(oled);
-  oled.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-  oled.setCursor(0, 0);
-  bench(oled, &drawAlphabet);
+  oled.setCursor(0, 16);
+  oled.println("bench canvas");
+  bench(oled, &drawAlphabetCanvas);
+  flushDisplay(oled);
+
+  oled.setCursor(0, 32);
+  oled.println("bench oled");
+  bench(oled, &drawAlphabetOled);
   flushDisplay(oled);
   delay(2000);
+
   for (;;)
     ;
 }
