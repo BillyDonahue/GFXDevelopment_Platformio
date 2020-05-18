@@ -201,17 +201,17 @@ void setup() {
     }
   }
 
-  clearDisplay(oled);
-  oled.setCursor(0, 16);
-  oled.println("bench canvas");
-  bench(oled, &drawAlphabetCanvas);
-  flushDisplay(oled);
+  // clearDisplay(oled);
+  // oled.setCursor(0, 16);
+  Serial.println("bench canvas");
+  bench(Serial, &drawAlphabetCanvas);
+  // flushDisplay(oled);
 
-  oled.setCursor(0, 32);
-  oled.println("bench oled");
-  bench(oled, &drawAlphabetOled);
-  flushDisplay(oled);
-  delay(2000);
+  // oled.setCursor(0, 32);
+  Serial.println("bench oled");
+  bench(Serial, &drawAlphabetOled);
+  // flushDisplay(oled);
+  // delay(2000);
 
   for (;;)
     ;
