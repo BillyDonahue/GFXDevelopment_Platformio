@@ -156,7 +156,7 @@ void bench(void (*f)(unsigned long)) {
   unsigned long minDuration = 2000;
 
   Serial.println("Running benchmark");
-  for (unsigned long iters = 10;; iters *= 2) {
+  for (unsigned long iters = 10;;) {
     Serial.print("iters=");
     Serial.println(iters);
     unsigned long t0 = millis();
