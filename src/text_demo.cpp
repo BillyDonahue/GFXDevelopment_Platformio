@@ -44,23 +44,34 @@ template <typename T> T minFunc(T a, T b) { return a < b ? a : b; }
 // Abstraction to contain the pgm_read discipline.
 struct FontHandler {
   struct Glyph {
-    uint8_t width() const { return pgmRead(&glyph->width); }
-    uint8_t height() const { return pgmRead(&glyph->height); }
-    uint8_t xAdvance() const { return pgmRead(&glyph->xAdvance); }
-    int8_t xOffset() const { return pgmRead(&glyph->xOffset); }
-    int8_t yOffset() const { return pgmRead(&glyph->yOffset); }
-    const GFXglyph *glyph;
+    uint8_t width() const { return pgmRead(&g->width); }
+    uint8_t height() const { return pgmRead(&g->height); }
+    uint8_t xAdvance() const { return pgmRead(&g->xAdvance); }
+    int8_t xOffset() const { return pgmRead(&g->xOffset); }
+    int8_t yOffset() const { return pgmRead(&g->yOffset); }
+    const GFXglyph *g;
   };
 
-  uint16_t first() const { return pgmRead(&font->first); }
-  uint16_t last() const { return pgmRead(&font->last); }
-  uint8_t yAdvance() const { return pgmRead(&font->yAdvance); }
-  Glyph getGlyph(uint16_t ch) const {
-    uint16_t cFirst = pgmRead(&font->first);
-    uint16_t cLast = pgmRead(&font->last);
-    if (ch < cFirst || ch > cLast)
-      return Glyph{nullptr};
-    return Glyph{&pgmRead(&font->glyph)[ch - cFirst]};
+  explicit FontHandler(const GFXfont *font) : font(font) {}
+
+  uint16_t first() const { return font ? pgmRead(&font->first) : 0; }
+  uint16_t last() const { return font ? pgmRead(&font->last) : 255; }
+  uint8_t yAdvance() const { return font ? pgmRead(&font->yAdvance) : 8; }
+  int8_t yAdjust() const { return font ? 0 : 6; }
+
+  GFXglyph *getGlyph(uint16_t c) const {
+    if (c < first() || c > last())
+      return nullptr;
+    return pgmRead(&font->glyph) + (c - first());
+  }
+
+  uint8_t xAdvance(uint16_t c) const {
+    if (!font)
+      return 6;
+    Glyph g = {getGlyph(c)};
+    if (!g.g)
+      return 0;
+    return g.xAdvance();
   }
 
   const GFXfont *font;
@@ -71,9 +82,8 @@ struct {
   const GFXfont *font;
   int scale;
 } fontSpecs[] = {
-    {"Classic", nullptr, 1}, //
-    {"Classic", nullptr, 2}, //
-
+    //{"Classic", nullptr, 1}, //
+    //{"Classic", nullptr, 2}, //
     //{"Classic", nullptr, 3},
     //{"Classic", nullptr, 4},
     //{"Org_01", &Org_01, 1},
@@ -106,24 +116,26 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
   clearDisplay(display);
   display.setFont(font.font);
   display.setTextSize(scale);
-  int16_t x = 0, y = 0;
+
+  int16_t x = 0;
+
+  int row = 0;
+
   for (uint16_t i = 0;;) {
-    if (1) {
-      Serial.print("i=");
-      Serial.println(i);
-    }
     char s[2] = {(char)i, 0};
     int16_t left = 0, top = 0;
     uint16_t w = 0, h = 0;
 
-    display.getTextBounds(s, x, y, &left, &top, &w, &h);
+    display.getTextBounds(s, 0, 0, &left, &top, &w, &h);
     if (1) {
-      Serial.print("plot(");
+      Serial.print("i=");
+      Serial.print(i);
+      Serial.print(", plot(");
       Serial.print((unsigned char)s[0], HEX);
-      Serial.print(",");
-      Serial.print(x);
-      Serial.print(",");
-      Serial.print(y);
+      // Serial.print(",");
+      // Serial.print(x);
+      // Serial.print(",");
+      // Serial.print(y);
       Serial.print(")=");
       Serial.print("{left:");
       Serial.print(left);
@@ -142,7 +154,23 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
       for (;;) {
       }
     }
-    if ((i && top + h > display.height()) || i == 256) {
+
+    if (x + left + int16_t(w) > display.width()) {
+      Serial.print("[hwrap]");
+      if (x == 0) { // won't fit
+        ++i;
+      } else {
+        ++row;
+        x = 0;
+      }
+      continue;
+    }
+
+    // y: baseline of `row` , adjusted by the yAdjust offset.
+    int16_t y = scale * (font.yAdvance() * row + font.yAdvance() * 6 / 8 -
+                         font.yAdjust());
+
+    if ((i && y + top + int16_t(h) > display.height()) || i == 256) {
       Serial.print(", flush");
       flushDisplay(display);
       delay(pageMillis);
@@ -152,17 +180,16 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
         return;
       } else {
         Serial.print("[vwrap]");
+        if (x == 0 && row == 0) // won't fit
+          ++i;
         x = 0;
-        y = 0;
+        row = 0;
         continue;
       }
     }
 
-    display.drawChar(left, top, s[0], 1, 0, scale);
-
-    x = left + w;
-    y = top;
-
+    display.drawChar(x, y, i, 1, 0, scale);
+    x += scale * font.xAdvance(i);
     ++i;
   }
 }
@@ -317,18 +344,19 @@ void setup() {
   }
 
   if (1) {
-    uint16_t basicPageMillis = 1000;
-    uint16_t scales[] = {1, 2, 4};
+    uint16_t basicPageMillis = 50;
+    uint16_t scales[] = {1, 2, 3, 4};
     for (uint16_t sc : scales) {
-      fontShow(oled, FontHandler{nullptr}, sc, basicPageMillis);
+      FontHandler fh(nullptr);
+      fontShow(oled, fh, sc, basicPageMillis);
     }
   }
-  if (0) {
-    uint16_t basicPageMillis = 2000;
+  if (1) {
+    uint16_t basicPageMillis = 200;
     uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
-      fontShow(oled, FontHandler{&FreeMonoBold12pt7b}, sc,
-               basicPageMillis / sc);
+      FontHandler fh(&FreeMonoBold12pt7b);
+      fontShow(oled, fh, sc, basicPageMillis / sc);
     }
   }
   if (0) {
@@ -339,7 +367,8 @@ void setup() {
       Serial.print(", scale: ");
       Serial.print(spec.scale);
       Serial.print(", display: oled");
-      benchFont(Serial, oled, FontHandler{spec.font}, spec.scale);
+      FontHandler fh(spec.font);
+      benchFont(Serial, oled, fh, spec.scale);
       Serial.println("");
     }
   }
