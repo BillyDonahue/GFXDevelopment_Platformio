@@ -22,40 +22,45 @@ static const bool withFonts = 0;
 //#error "unify branch building"
 #endif
 
+namespace {
+template <size_t N> struct SizeTag {};
+template <typename T> T pgmRead(const T *p, SizeTag<1>) {
+  return (T)pgm_read_byte(p);
+}
+template <typename T> T pgmRead(const T *p, SizeTag<2>) {
+  return (T)pgm_read_word(p);
+}
+template <typename T> T pgmRead(const T *p, SizeTag<4>) {
+  return (T)pgm_read_dword(p);
+}
+template <typename T> T pgmRead(const T *p) {
+  return pgmRead(p, SizeTag<sizeof(T)>());
+}
+
 template <typename T> T minFunc(T a, T b) { return a < b ? a : b; }
 
-template <typename T, size_t = sizeof(T)> struct pgmRead_;
-template <typename T> struct pgmRead_<T, 1> {
-  T operator()(const void *p) const { return (T)pgm_read_byte(p); }
-};
-template <typename T> struct pgmRead_<T, 2> {
-  T operator()(const void *p) const { return (T)pgm_read_word(p); }
-};
-template <typename T> struct pgmRead_<T, 4> {
-  T operator()(const void *p) const { return (T)pgm_read_dword(p); }
-};
-template <typename T> T pgmRead(const void *p) { return pgmRead_<T>()(p); }
+} // namespace
 
 // Abstraction to contain the pgm_read discipline.
 struct FontHandler {
   struct Glyph {
-    uint8_t width() const { return pgmRead<uint8_t>(&glyph->width); }
-    uint8_t height() const { return pgmRead<uint8_t>(&glyph->height); }
-    uint8_t xAdvance() const { return pgmRead<uint8_t>(&glyph->xAdvance); }
-    int8_t xOffset() const { return pgmRead<int8_t>(&glyph->xOffset); }
-    int8_t yOffset() const { return pgmRead<int8_t>(&glyph->yOffset); }
+    uint8_t width() const { return pgmRead(&glyph->width); }
+    uint8_t height() const { return pgmRead(&glyph->height); }
+    uint8_t xAdvance() const { return pgmRead(&glyph->xAdvance); }
+    int8_t xOffset() const { return pgmRead(&glyph->xOffset); }
+    int8_t yOffset() const { return pgmRead(&glyph->yOffset); }
     const GFXglyph *glyph;
   };
 
-  uint16_t first() const { return pgmRead<uint16_t>(&font->first); }
-  uint16_t last() const { return pgmRead<uint16_t>(&font->last); }
-  uint8_t yAdvance() const { return pgmRead<uint8_t>(&font->yAdvance); }
+  uint16_t first() const { return pgmRead(&font->first); }
+  uint16_t last() const { return pgmRead(&font->last); }
+  uint8_t yAdvance() const { return pgmRead(&font->yAdvance); }
   Glyph getGlyph(uint16_t ch) const {
-    uint16_t cFirst = pgmRead<uint16_t>(&font->first);
-    uint16_t cLast = pgmRead<uint16_t>(&font->last);
+    uint16_t cFirst = pgmRead(&font->first);
+    uint16_t cLast = pgmRead(&font->last);
     if (ch < cFirst || ch > cLast)
       return Glyph{nullptr};
-    return Glyph{&pgmRead<GFXglyph *>(&font->glyph)[ch - cFirst]};
+    return Glyph{&pgmRead(&font->glyph)[ch - cFirst]};
   }
 
   const GFXfont *font;
@@ -66,16 +71,17 @@ struct {
   const GFXfont *font;
   int scale;
 } fontSpecs[] = {
-    {"Classic", nullptr, 1},
-    {"Classic", nullptr, 2},
+    {"Classic", nullptr, 1}, //
+    {"Classic", nullptr, 2}, //
+
     //{"Classic", nullptr, 3},
     //{"Classic", nullptr, 4},
-    // {"Org_01", &Org_01, 1},
-    {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
+    //{"Org_01", &Org_01, 1},
+    //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
     //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
     //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
     //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
-    {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
+    //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
     //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
 };
 
@@ -99,28 +105,61 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
               uint16_t pageMillis) {
   clearDisplay(display);
   display.setFont(font.font);
+  display.setTextSize(scale);
   int16_t x = 0, y = 0;
   for (uint16_t i = 0; i < 256; ++i) {
+    if (1) {
+      Serial.print("i=");
+      Serial.println(i);
+    }
     char s[2] = {(char)i, 0};
-    int16_t left, top;
-    uint16_t w, h;
+    int16_t left = 0, top = 0;
+    uint16_t w = 0, h = 0;
+
     display.getTextBounds(s, x, y, &left, &top, &w, &h);
-    display.drawChar(left, -top, s[0], 1, 0, scale);
-    x += w;
-    if (x > display.width()) {
+    if (0) {
+      Serial.print("plot(");
+      Serial.print((unsigned char)s[0], HEX);
+      Serial.print(",");
+      Serial.print(x);
+      Serial.print(",");
+      Serial.print(y);
+      Serial.print(")=");
+      Serial.print("{left:");
+      Serial.print(left);
+      Serial.print(",top:");
+      Serial.print(top);
+      Serial.print(",w:");
+      Serial.print(w);
+      Serial.print(",h:");
+      Serial.print(h);
+      Serial.println("}");
+    }
+
+    display.drawChar(left, top, s[0], 1, 0, scale);
+
+    x += scale * w;
+
+    if (x >= display.width()) {
       x = 0;
-      uint8_t hh = 8;
+      uint8_t hh = scale * 8;
       if (font.font) {
         hh = scale * font.yAdvance();
       }
       y += hh;
     }
-    if ((i && y > display.height()) || i == 256) {
-      flushDisplay(display);
-      delay(pageMillis);
-      clearDisplay(display);
-      if (i == 256)
+    if (y >= display.height() || i == 256) {
+      Serial.print("flush");
+      // flushDisplay(display);
+      // delay(pageMillis);
+      // clearDisplay(display);
+      if (i == 256) {
+        Serial.println("bye");
         return;
+      } else {
+        x = 0;
+        y = 0;
+      }
     }
   }
 }
@@ -273,7 +312,7 @@ void setup() {
     clearDisplay(oled);
   }
 
-  if (0) {
+  if (1) {
     uint16_t basicPageMillis = 500;
     uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
@@ -288,16 +327,17 @@ void setup() {
                basicPageMillis / sc);
     }
   }
-
-  Serial.println("Bench");
-  for (const auto &spec : fontSpecs) {
-    Serial.print("  font: ");
-    Serial.print(spec.name);
-    Serial.print(", scale: ");
-    Serial.print(spec.scale);
-    Serial.print(", display: oled");
-    benchFont(Serial, oled, FontHandler{spec.font}, spec.scale);
-    Serial.println("");
+  if (0) {
+    Serial.println("Bench");
+    for (const auto &spec : fontSpecs) {
+      Serial.print("  font: ");
+      Serial.print(spec.name);
+      Serial.print(", scale: ");
+      Serial.print(spec.scale);
+      Serial.print(", display: oled");
+      benchFont(Serial, oled, FontHandler{spec.font}, spec.scale);
+      Serial.println("");
+    }
   }
 }
 
