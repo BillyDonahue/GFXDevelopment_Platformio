@@ -18,13 +18,37 @@
 
 static const bool withFonts = 0;
 
+#ifdef ADAFRUIT_GFX_GFXUNIFY
+//#error "unify branch building"
+#endif
+
 template <typename T> T minFunc(T a, T b) { return a < b ? a : b; }
 
-uint16_t fontFirst(const GFXfont *font) { return pgm_read_word(&font->first); }
-uint16_t fontLast(const GFXfont *font) { return pgm_read_word(&font->last); }
-uint8_t fontYAdvance(const GFXfont *font) {
-  return pgm_read_byte(&font->yAdvance);
-}
+struct FontHandler {
+  struct Glyph {
+    uint8_t width() const { return pgm_read_byte(&glyph->width); }
+    uint8_t height() const { return pgm_read_byte(&glyph->height); }
+    uint8_t xAdvance() const { return pgm_read_byte(&glyph->xAdvance); }
+    int8_t xOffset() const { return pgm_read_byte(&glyph->xOffset); }
+    int8_t yOffset() const { return pgm_read_byte(&glyph->yOffset); }
+    const GFXglyph *glyph;
+  };
+
+  uint8_t yAdvance() const { return pgm_read_byte(&font->yAdvance); }
+  Glyph getGlyph(uint16_t ch) const {
+    uint16_t first = pgm_read_word(&font->first);
+    uint16_t last = pgm_read_word(&font->last);
+    if (ch < first || ch > last)
+      return nullptr;
+    activeGlyph_.glyph = pgm_read_glyph_ptr(font, ch - first);
+    uint8_t *bitmap = pgm_read_bitmap_ptr(font);
+    uint16_t bo = pgm_read_word(&activeGlyph_.glyph->bitmapOffset);
+    activeGlyph_.bitmap = bitmap + bo;
+    return &activeGlyph_;
+  }
+
+  const GFXfont *font;
+};
 
 struct {
   const char *name;
