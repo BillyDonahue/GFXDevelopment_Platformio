@@ -314,14 +314,14 @@ void setup() {
   }
 
   if (1) {
-    uint16_t basicPageMillis = 500;
-    uint16_t scales[] = {1, 2};
+    uint16_t basicPageMillis = 1000;
+    uint16_t scales[] = {1, 2, 4};
     for (uint16_t sc : scales) {
-      fontShow(oled, FontHandler{nullptr}, sc, basicPageMillis / sc);
+      fontShow(oled, FontHandler{nullptr}, sc, basicPageMillis);
     }
   }
   if (0) {
-    uint16_t basicPageMillis = 500;
+    uint16_t basicPageMillis = 2000;
     uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
       fontShow(oled, FontHandler{&FreeMonoBold12pt7b}, sc,
