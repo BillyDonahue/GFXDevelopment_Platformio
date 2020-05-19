@@ -56,7 +56,7 @@ void clearDisplay(Adafruit_GFX &display) {
   if (&display == &oled) {
     oled.clearDisplay();
   } else {
-    display.fillScreen(SSD1306_BLACK);
+    display.fillScreen(0);
   }
 }
 
@@ -93,7 +93,7 @@ void fontShow(Adafruit_GFX &display, const GFXfont *font, uint8_t scale,
 void textDemo(Adafruit_GFX &display) {
   for (const auto &spec : fontSpecs) {
 
-    display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
+    display.setTextColor(1, 0);
     display.setCursor(0, 20);
 
     display.setFont(nullptr);
@@ -137,7 +137,7 @@ void textDemo(Adafruit_GFX &display) {
           delay(1000);
           y += -top;
         }
-        display.drawChar(x, y, ch, SSD1306_WHITE, SSD1306_BLACK, spec.scale);
+        display.drawChar(x, y, ch, 1, 0, spec.scale);
         x += left + w;
       }
     }
@@ -230,19 +230,21 @@ void setup() {
       ; // Don't proceed, loop forever
   }
   oled.cp437(true);
-  oled.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
-  flushDisplay(oled);
-  delay(2000);
-  clearDisplay(oled);
+  oled.setTextColor(1, 0);
+  if (0) {
+    flushDisplay(oled);
+    delay(2000);
+    clearDisplay(oled);
+  }
 
-  if (1) {
+  if (0) {
     uint16_t basicPageMillis = 500;
     uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
       fontShow(oled, nullptr, sc, basicPageMillis / sc);
     }
   }
-  if (1) {
+  if (0) {
     uint16_t basicPageMillis = 500;
     uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
