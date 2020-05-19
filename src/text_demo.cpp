@@ -107,7 +107,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
   display.setFont(font.font);
   display.setTextSize(scale);
   int16_t x = 0, y = 0;
-  for (uint16_t i = 0; i < 256; ++i) {
+  for (uint16_t i = 0;; ++i) {
     if (1) {
       Serial.print("i=");
       Serial.println(i);
@@ -117,7 +117,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
     uint16_t w = 0, h = 0;
 
     display.getTextBounds(s, x, y, &left, &top, &w, &h);
-    if (0) {
+    if (1) {
       Serial.print("plot(");
       Serial.print((unsigned char)s[0], HEX);
       Serial.print(",");
@@ -138,7 +138,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
 
     display.drawChar(left, top, s[0], 1, 0, scale);
 
-    x += scale * w;
+    x += w;
 
     if (x >= display.width()) {
       x = 0;
@@ -149,12 +149,12 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
       y += hh;
     }
     if (y >= display.height() || i == 256) {
-      Serial.print("flush");
-      // flushDisplay(display);
-      // delay(pageMillis);
-      // clearDisplay(display);
+      Serial.print(", flush");
+      flushDisplay(display);
+      delay(pageMillis);
+      clearDisplay(display);
       if (i == 256) {
-        Serial.println("bye");
+        Serial.println(", bye");
         return;
       } else {
         x = 0;
@@ -297,7 +297,8 @@ void benchFont(Print &out, Adafruit_GFX &display, const FontHandler &font,
 }
 
 void setup() {
-  Serial.begin(9600);
+  // Serial.begin(9600);
+  Serial.begin(115200);
   if (!oled.begin(SSD1306_SWITCHCAPVCC,
                   0x3d)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
