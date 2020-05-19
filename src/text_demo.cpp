@@ -107,7 +107,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
   display.setFont(font.font);
   display.setTextSize(scale);
   int16_t x = 0, y = 0;
-  for (uint16_t i = 0;; ++i) {
+  for (uint16_t i = 0;;) {
     if (1) {
       Serial.print("i=");
       Serial.println(i);
@@ -136,19 +136,13 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
       Serial.println("}");
     }
 
-    display.drawChar(left, top, s[0], 1, 0, scale);
-
-    x += w;
-
-    if (x >= display.width()) {
-      x = 0;
-      uint8_t hh = scale * 8;
-      if (font.font) {
-        hh = scale * font.yAdvance();
+    if (0) {
+      flushDisplay(display);
+      Serial.print("[halt]");
+      for (;;) {
       }
-      y += hh;
     }
-    if (y >= display.height() || i == 256) {
+    if ((i && top + h > display.height()) || i == 256) {
       Serial.print(", flush");
       flushDisplay(display);
       delay(pageMillis);
@@ -157,10 +151,19 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
         Serial.println(", bye");
         return;
       } else {
+        Serial.print("[vwrap]");
         x = 0;
         y = 0;
+        continue;
       }
     }
+
+    display.drawChar(left, top, s[0], 1, 0, scale);
+
+    x = left + w;
+    y = top;
+
+    ++i;
   }
 }
 
