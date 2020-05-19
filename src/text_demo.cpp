@@ -16,33 +16,35 @@
 // 1.8.2          , 13944 , 19376
 // glcdfont_unify , 13526 , 19610
 
-static const bool withFonts = 1;
+static const bool withFonts = 0;
+
+template <typename T> T minFunc(T a, T b) { return a < b ? a : b; }
+
+uint16_t fontFirst(const GFXfont *font) { return pgm_read_word(&font->first); }
+uint16_t fontLast(const GFXfont *font) { return pgm_read_word(&font->last); }
+uint8_t fontYAdvance(const GFXfont *font) {
+  return pgm_read_byte(&font->yAdvance);
+}
+
+struct {
+  const char *name;
+  const GFXfont *font;
+  int scale;
+} fontSpecs[] = {
+    {"Classic", nullptr, 1},
+    {"Classic", nullptr, 2},
+    //{"Classic", nullptr, 3},
+    //{"Classic", nullptr, 4},
+    // {"Org_01", &Org_01, 1},
+    {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
+    //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
+    //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
+    //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
+    {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
+    //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
+};
 
 Adafruit_SSD1306 oled(128, 64, &Wire, 4);
-
-void bench(Print &out, void (*f)(unsigned long)) {
-  unsigned long minDuration = 2000;
-  // out.println("Running benchmark");
-  for (unsigned long iters = 10;;) {
-    unsigned long t0 = millis();
-    f(iters);
-    unsigned long t1 = millis();
-    unsigned long duration = t1 - t0;
-    if (duration > minDuration) {
-      if (0) {
-        out.print("duration:");
-        out.println(duration);
-        out.print("iters:");
-        out.println(iters);
-      }
-      out.print("msec/iter:");
-      out.println(duration / iters);
-      return;
-    }
-    // improve the estimate of iters
-    iters = iters * (1.2 * minDuration / duration);
-  }
-}
 
 void flushDisplay(Adafruit_GFX &display) {
   if (&display == &oled) {
@@ -58,54 +60,37 @@ void clearDisplay(Adafruit_GFX &display) {
   }
 }
 
-void classicFontCheckerBoard(Adafruit_GFX &display, uint8_t scale,
-                             uint16_t pageMillis) {
+void fontShow(Adafruit_GFX &display, const GFXfont *font, uint8_t scale,
+              uint16_t pageMillis) {
   clearDisplay(display);
-  static const uint8_t kGlyphWidth = 6;
-  static const uint8_t kGlyphHeight = 8;
-  const uint8_t kScaledGlyphWidth = kGlyphWidth * scale;
-  const uint8_t kScaledGlyphHeight = kGlyphHeight * scale;
-  uint16_t kPerRow = display.width() / kScaledGlyphWidth;
-  uint16_t kRows = display.height() / kScaledGlyphHeight;
-  for (uint16_t i = 0;; ++i) {
-    uint16_t x = 0 + kScaledGlyphWidth * (i % kPerRow);
-    uint16_t y = 0 + kScaledGlyphHeight * ((i / kPerRow) % kRows);
-    if ((i && x == 0 && y == 0) || i == 256) {
+  display.setFont(font);
+  int16_t x = 0, y = 0;
+  for (uint16_t i = 0; i < 256; ++i) {
+    char s[2] = {(char)i, 0};
+    int16_t left, top;
+    uint16_t w, h;
+    display.getTextBounds(s, x, y, &left, &top, &w, &h);
+    display.drawChar(left, -top, s[0], 1, 0, scale);
+    x += w;
+    if (x > display.width()) {
+      x = 0;
+      uint8_t hh = 8;
+      if (font) {
+        hh = scale * (uint8_t)pgm_read_byte(&font->yAdvance);
+      }
+      y += hh;
+    }
+    if ((i && y > display.height()) || i == 256) {
       flushDisplay(display);
       delay(pageMillis);
       clearDisplay(display);
       if (i == 256)
         return;
     }
-    uint16_t fg = SSD1306_WHITE;
-    uint16_t bg = SSD1306_BLACK;
-    if (false && i & 1) {
-      uint16_t t = fg;
-      fg = bg;
-      bg = t;
-    }
-    display.drawChar(x, y, (i & 0xff), fg, bg, scale);
   }
 }
 
 void textDemo(Adafruit_GFX &display) {
-  struct {
-    const char *name;
-    const GFXfont *font;
-    int scale;
-  } fontSpecs[] = {
-      {"Classic", nullptr, 1},
-      {"Classic", nullptr, 2},
-      //{"Classic", nullptr, 3},
-      //{"Classic", nullptr, 4},
-      {"Org_01", &Org_01, 1},
-      {"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
-      //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
-      //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
-      //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
-      {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
-      //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
-  };
   for (const auto &spec : fontSpecs) {
 
     display.setTextColor(SSD1306_WHITE, SSD1306_BLACK);
@@ -159,25 +144,82 @@ void textDemo(Adafruit_GFX &display) {
   }
 }
 
-void drawAlphabetTo(Adafruit_GFX &display) {
-  for (unsigned char c = 0;; ++c) {
-    display.drawChar(0, 0, c, 1, 0, 1);
-    if (c == 0xff)
+void drawAlphabetTo(unsigned long niter, Adafruit_GFX &display,
+                    const GFXfont *font, uint8_t scale) {
+  int16_t x = display.width() / 2;
+  int16_t y = display.height() / 2;
+  unsigned char first = 0;
+  unsigned char last = 255;
+  if (font) {
+    first = (unsigned char)minFunc((uint16_t)255, fontFirst(font));
+    last = (unsigned char)minFunc((uint16_t)255, fontLast(font));
+  }
+
+  while (niter--) {
+    // delay(10);
+    // continue;
+
+    for (unsigned char ch = first;; ++ch) {
+      if (0) {
+        Serial.print("ch:");
+        Serial.print((int)ch);
+        Serial.print(",");
+      }
+      display.drawChar(x, y, ch, 1, 0, scale);
+      if (ch == last)
+        break;
+    }
+  }
+}
+
+void benchFont(Print &out, Adafruit_GFX &display, const GFXfont *font,
+               uint8_t scale) {
+  // out.println("Running benchmark");
+  display.setFont(font);
+  // display.setTextSize(scale);
+  // display.setCursor(0, 20);
+
+  static const unsigned long minDuration = 1000;
+  out.print(", trials:[");
+  unsigned long iters = 10;
+  unsigned long duration = 0;
+  for (;;) {
+    out.print("{");
+    out.print(iters);
+    out.print(",");
+    unsigned long t0 = millis();
+    drawAlphabetTo(iters, display, font, scale);
+    unsigned long t1 = millis();
+
+    duration = t1 - t0;
+    out.print(duration);
+    out.print("},");
+    if (duration > minDuration) {
       break;
-  }
-}
+    }
 
-void drawAlphabetCanvas(unsigned long niter) {
-  GFXcanvas1 canvas(32, 32);
-  while (niter--) {
-    drawAlphabetTo(canvas);
+    // improve the estimate of iters
+    {
+      if (duration) {
+        auto ni = iters * (1.2 * minDuration / duration);
+        if (ni > iters) {
+          iters = ni;
+          continue;
+        }
+      }
+      ++iters;
+      iters *= 2;
+    }
   }
-}
-
-void drawAlphabetOled(unsigned long niter) {
-  while (niter--) {
-    drawAlphabetTo(oled);
+  out.print("]");
+  if (1) {
+    out.print("], duration:");
+    out.print(duration);
+    out.print(", iters:");
+    out.print(iters);
   }
+  out.print(", msec/iter:");
+  out.print(duration / iters);
 }
 
 void setup() {
@@ -194,30 +236,31 @@ void setup() {
   clearDisplay(oled);
 
   if (1) {
-    uint16_t basicPageMillis = 40;
-    uint16_t scales[] = {1, 8};
+    uint16_t basicPageMillis = 500;
+    uint16_t scales[] = {1, 2};
     for (uint16_t sc : scales) {
-      classicFontCheckerBoard(oled, sc, basicPageMillis / sc);
+      fontShow(oled, nullptr, sc, basicPageMillis / sc);
+    }
+  }
+  if (1) {
+    uint16_t basicPageMillis = 500;
+    uint16_t scales[] = {1, 2};
+    for (uint16_t sc : scales) {
+      fontShow(oled, &FreeMonoBold12pt7b, sc, basicPageMillis / sc);
     }
   }
 
-  // clearDisplay(oled);
-  // oled.setCursor(0, 16);
-  Serial.println("bench canvas");
-  bench(Serial, &drawAlphabetCanvas);
-  // flushDisplay(oled);
-
-  // oled.setCursor(0, 32);
-  Serial.println("bench oled");
-  bench(Serial, &drawAlphabetOled);
-  // flushDisplay(oled);
-  // delay(2000);
-
-  for (;;)
-    ;
+  Serial.println("Bench");
+  for (const auto &spec : fontSpecs) {
+    Serial.print("  font: ");
+    Serial.print(spec.name);
+    Serial.print(", scale: ");
+    Serial.print(spec.scale);
+    Serial.print(", display: oled");
+    benchFont(Serial, oled, spec.font, spec.scale);
+    Serial.println("");
+  }
 }
-
-// comment out the textDemo() call
 
 void loop() {
   if (withFonts)
