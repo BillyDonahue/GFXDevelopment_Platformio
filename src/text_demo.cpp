@@ -155,7 +155,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
       }
     }
 
-    if (x + left + int16_t(w) > display.width()) {
+    if (w && (x + left + int16_t(w) > display.width())) {
       Serial.print("[hwrap]");
       if (x == 0) { // won't fit
         ++i;
@@ -188,7 +188,9 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
       }
     }
 
-    display.drawChar(x, y, i, 1, 0, scale);
+    if (w && h) {
+      display.drawChar(x, y, i, 1, 0, scale);
+    }
     x += scale * font.xAdvance(i);
     ++i;
   }
