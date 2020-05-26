@@ -16,10 +16,18 @@
 // 1.8.2          , 13944 , 19376
 // glcdfont_unify , 13526 , 19610
 
-static const bool withFonts = 0;
+static const bool withFonts = 1;
 
 #ifdef ADAFRUIT_GFX_GFXUNIFY
 //#error "unify branch building"
+#endif
+
+#if 1
+Adafruit_SSD1306 oled(128, 64, &Wire, 4);
+static const uint8_t oledI2CAddr = 0x3d;
+#else
+Adafruit_SSD1306 oled(128, 32, &Wire, 4);
+static const uint8_t oledI2CAddr = 0x3c;
 #endif
 
 namespace {
@@ -89,13 +97,11 @@ struct {
     //{"Org_01", &Org_01, 1},
     //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 1},
     //{"FreeMonoBold12pt7b", &FreeMonoBold12pt7b, 2},
-    //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
+    {"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 1},
     //{"FreeSerifItalic12pt7b", &FreeSerifItalic12pt7b, 2},
-    //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
+    {"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 1},
     //{"FreeMonoOblique9pt7b", &FreeMonoOblique9pt7b, 2},
 };
-
-Adafruit_SSD1306 oled(128, 64, &Wire, 4);
 
 void flushDisplay(Adafruit_GFX &display) {
   if (&display == &oled) {
@@ -156,7 +162,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
     }
 
     if (w && (x + left + int16_t(w) > display.width())) {
-      Serial.print("[hwrap]");
+      // Serial.print("[hwrap]");
       if (x == 0) { // won't fit
         ++i;
       } else {
@@ -171,15 +177,15 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
                          font.yAdjust());
 
     if ((i && y + top + int16_t(h) > display.height()) || i == 256) {
-      Serial.print(", flush");
+      // Serial.print(", flush");
       flushDisplay(display);
       delay(pageMillis);
       clearDisplay(display);
       if (i == 256) {
-        Serial.println(", bye");
+        // Serial.println(", bye");
         return;
       } else {
-        Serial.print("[vwrap]");
+        // Serial.print("[vwrap]");
         if (x == 0 && row == 0) // won't fit
           ++i;
         x = 0;
@@ -198,6 +204,7 @@ void fontShow(Adafruit_GFX &display, const FontHandler &font, uint8_t scale,
 
 void textDemo(Adafruit_GFX &display) {
   for (const auto &spec : fontSpecs) {
+    clearDisplay(display);
 
     display.setTextColor(1, 0);
     display.setCursor(0, 20);
@@ -210,12 +217,17 @@ void textDemo(Adafruit_GFX &display) {
     display.setFont(spec.font);
     display.cp437();
     display.setTextSize(spec.scale);
-    display.print(spec.name);
+    for (const char *c = spec.name; *c; ++c) {
+      display.print(*c);
+      delay(100);
+      flushDisplay(display);
+    }
+    // display.print(spec.name);
     flushDisplay(display);
-
     delay(1000);
+    clearDisplay(display);
 
-    if (0) {
+    if (1) {
       uint16_t x = 0;
       uint16_t yAdv = spec.font ? spec.font->yAdvance : 8;
       uint16_t first = spec.font ? spec.font->first : 0;
@@ -233,7 +245,7 @@ void textDemo(Adafruit_GFX &display) {
         //              s, x, y, left, top, w, h);
         if ((int16_t)(x + left + w) > (int16_t)display.width()) {
           flushDisplay(display);
-          delay(100);
+          delay(500);
           x = 0;
           // Serial.print("clearing display\n");
           clearDisplay(display);
@@ -328,22 +340,38 @@ void benchFont(Print &out, Adafruit_GFX &display, const FontHandler &font,
   out.print(duration / iters);
 }
 
+void blink(int pin, unsigned reps) {
+  Serial.println(F("blink"));
+  pinMode(pin, OUTPUT);
+  while (reps--) {
+    digitalWrite(pin, HIGH);
+    delay(100);
+    digitalWrite(pin, LOW);
+    delay(100);
+  }
+}
+
 void setup() {
-  // Serial.begin(9600);
-  Serial.begin(115200);
-  if (!oled.begin(SSD1306_SWITCHCAPVCC,
-                  0x3d)) { // Address 0x3C for 128x32
+  delay(3000);
+  Serial.begin(9600);
+
+  // blink(500);
+  // blink(12, 10);
+
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, oledI2CAddr)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ; // Don't proceed, loop forever
   }
+  // delay(100);
+  // Serial.println(F("begin"));
+
   oled.cp437(true);
   oled.setTextColor(1, 0);
-  if (1) {
-    flushDisplay(oled);
-    delay(2000);
-    clearDisplay(oled);
-  }
+
+  flushDisplay(oled);
+  delay(1000);
+  clearDisplay(oled);
 
   if (1) {
     uint16_t basicPageMillis = 50;
@@ -361,7 +389,7 @@ void setup() {
       fontShow(oled, fh, sc, basicPageMillis / sc);
     }
   }
-  if (0) {
+  if (1) {
     Serial.println("Bench");
     for (const auto &spec : fontSpecs) {
       Serial.print("  font: ");
@@ -369,6 +397,7 @@ void setup() {
       Serial.print(", scale: ");
       Serial.print(spec.scale);
       Serial.print(", display: oled");
+      Serial.println("");
       FontHandler fh(spec.font);
       benchFont(Serial, oled, fh, spec.scale);
       Serial.println("");
