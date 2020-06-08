@@ -90,8 +90,8 @@ struct {
   const GFXfont *font;
   int scale;
 } fontSpecs[] = {
-    //{"Classic", nullptr, 1}, //
-    //{"Classic", nullptr, 2}, //
+    {"Classic", nullptr, 1}, //
+    {"Classic", nullptr, 2}, //
     //{"Classic", nullptr, 3},
     //{"Classic", nullptr, 4},
     //{"Org_01", &Org_01, 1},
